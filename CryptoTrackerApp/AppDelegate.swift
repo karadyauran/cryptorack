@@ -28,6 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func setupCoinCapService() {
         coinCapService.connect()
+        coinCapService.startMonitorNetworkConnectivity()
     }
 }
 

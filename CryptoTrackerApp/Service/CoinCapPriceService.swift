@@ -20,6 +20,8 @@ class CoinCapPriceService: NSObject {
     private let connectionStateSubject = CurrentValueSubject<Bool, Never>(false)
     private var isConnected: Bool {connectionStateSubject.value}
     
+    private let monitor = NWPathMonitor()
+    
     func connect() {
         let coins = CoinType.allCases
             .map {$0.rawValue}
@@ -31,6 +33,20 @@ class CoinCapPriceService: NSObject {
         wsTask?.resume()
         self.receiveMessage()
         self.schedulePing()
+    }
+    
+    func startMonitorNetworkConnectivity() {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard let self = self else {return}
+            if path.status == .satisfied, self.wsTask == nil {
+                self.connect()
+            }
+            
+            if path.status != .satisfied {
+                self.clearConnection()
+            }
+        }
+        monitor.start(queue: .main)
     }
     
     private func receiveMessage() {
