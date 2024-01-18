@@ -12,6 +12,7 @@ import Network
 class CoinCapPriceService: NSObject {
     private let session = URLSession(configuration: .default)
     private var wsTask: URLSessionWebSocketTask?
+    private var pingTryCount = 0
     
     private let coinDictionarySubject = CurrentValueSubject<[String: Coin], Never>([:])
     private var coinDictionary: [String: Coin] {coinDictionarySubject.value}
@@ -29,6 +30,7 @@ class CoinCapPriceService: NSObject {
         wsTask?.delegate = self
         wsTask?.resume()
         self.receiveMessage()
+        self.schedulePing()
     }
     
     private func receiveMessage() {
@@ -54,7 +56,7 @@ class CoinCapPriceService: NSObject {
                 self.receiveMessage()
                 
             case .failure(let error):
-                print("Failed to receive meassage: \(error.localizedDescription)")
+                print("[FAIL] Failed to receive meassage: \(error.localizedDescription)")
             }
         }
     }
@@ -83,11 +85,14 @@ class CoinCapPriceService: NSObject {
                 return
             }
             
-            if task.state == .running {
-                print("Ping: Send Ping")
-                task.sendPing { error in
+            if task.state == .running, self.pingTryCount < 2 {
+                self.pingTryCount += 1
+                print("[INFO] Ping: Send Ping \(self.pingTryCount)")
+                task.sendPing { [weak self] error in
                     if let error = error {
-                        print("Ping failed: \(error.localizedDescription)")
+                        print("[FAIL] Ping failed: \(error.localizedDescription)")
+                    } else if self?.wsTask?.taskIdentifier == identifier {
+                        self?.pingTryCount = 0
                     }
                 }
                 self.schedulePing()
@@ -105,7 +110,7 @@ class CoinCapPriceService: NSObject {
     func clearConnection() {
         self.wsTask?.cancel()
         self.wsTask = nil
-        
+        self.pingTryCount = 0
         self.connectionStateSubject.send(false)
     }
  
