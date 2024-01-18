@@ -63,12 +63,12 @@ extension AppDelegate {
         }
         
         guard let menuButton = statusItem.button else {return}
-        let positioningView = NSView(frame: menuButton.bounds)
-        positioningView.identifier = NSUserInterfaceItemIdentifier("positioningView")
-        menuButton.addSubview(positioningView)
+//        let positioningView = NSView(frame: menuButton.bounds)
+//        positioningView.identifier = NSUserInterfaceItemIdentifier("positioningView")
+//        menuButton.addSubview(positioningView)
         
         popover.show(relativeTo: menuButton.bounds, of: menuButton, preferredEdge: .maxY)
-        menuButton.bounds = menuButton.bounds.offsetBy(dx: 0, dy: menuButton.bounds.height)
+//        menuButton.bounds = menuButton.bounds.offsetBy(dx: 0, dy: menuButton.bounds.height)
         popover.contentViewController?.view.window?.makeKey()
     }
 }

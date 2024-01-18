@@ -13,6 +13,8 @@ struct MenuBarView: View {
     
     var body: some View {
         HStack(spacing: 4) {
+            Image(systemName: "circle.fill")
+                .foregroundColor(viewModel.color)
             VStack(alignment: .center, spacing: -3) {
                 Text(viewModel.name)
                 Text(viewModel.value)
