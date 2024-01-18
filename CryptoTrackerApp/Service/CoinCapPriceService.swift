@@ -74,6 +74,41 @@ class CoinCapPriceService: NSObject {
         coinDictionarySubject.send(mergeDictionary)
     }
     
+    private func schedulePing() {
+        let identifier = self.wsTask?.taskIdentifier ?? -1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {[weak self] in
+            guard let self = self, let task = self.wsTask,
+                  task.taskIdentifier == identifier
+            else {
+                return
+            }
+            
+            if task.state == .running {
+                print("Ping: Send Ping")
+                task.sendPing { error in
+                    if let error = error {
+                        print("Ping failed: \(error.localizedDescription)")
+                    }
+                }
+                self.schedulePing()
+            } else {
+                self.reconnect()
+            }
+        }
+    }
+    
+    private func reconnect() {
+        self.clearConnection()
+        self.connect()
+    }
+    
+    func clearConnection() {
+        self.wsTask?.cancel()
+        self.wsTask = nil
+        
+        self.connectionStateSubject.send(false)
+    }
+ 
     deinit {
         coinDictionarySubject.send(completion: .finished)
         connectionStateSubject.send(completion: .finished)
@@ -82,10 +117,10 @@ class CoinCapPriceService: NSObject {
 
 extension CoinCapPriceService: URLSessionWebSocketDelegate {
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        // pass
+        self.connectionStateSubject.send(true)
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        // pass
+        self.connectionStateSubject.send(false)
     }
 }
